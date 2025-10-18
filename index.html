@@ -42,9 +42,14 @@
         <div id="sidebar-content" class="flex-grow">
             <!-- Deck/Tag filters will be populated here -->
         </div>
-        <button id="start-cram-btn" class="mt-4 w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg transition-colors">
-            Cram Mode
-        </button>
+        <div class="space-y-2 pt-2 border-t border-gray-700">
+            <button id="start-quiz-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded-lg transition-colors">
+                Quiz Mode
+            </button>
+            <button id="start-cram-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg transition-colors">
+                Cram Mode
+            </button>
+        </div>
     </aside>
 
     <!-- Main Content -->
@@ -58,13 +63,17 @@
             <!-- Header: Progress and Tag -->
             <div class="flex justify-between items-center mb-4 px-2">
                 <div id="tag-display" class="bg-gray-700 text-blue-300 text-sm font-semibold px-3 py-1 rounded-full truncate"></div>
-                <div id="progress-display" class="text-gray-400 font-medium"></div>
+                <div class="flex items-center space-x-4">
+                    <button id="toggle-answer-view-btn" class="hidden text-sm bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded-md transition-colors">Hide Answers</button>
+                    <div id="progress-display" class="text-gray-400 font-medium"></div>
+                </div>
             </div>
 
             <!-- Flashcard Area -->
             <div id="card-container" class="hidden bg-gray-800 rounded-xl shadow-2xl p-6 sm:p-8 flex flex-col justify-center items-start text-left w-full h-[65vh] max-h-[500px] overflow-y-auto">
-                <p id="question-area" class="text-lg sm:text-xl md:text-2xl leading-relaxed"></p>
+                <div id="question-text-area" class="text-lg sm:text-xl md:text-2xl leading-relaxed w-full"></div>
                 <p id="answer-area" class="hidden text-xl sm:text-2xl md:text-3xl font-bold text-green-400 mt-4"></p>
+                <div id="quiz-options-area" class="hidden w-full mt-6 space-y-3"></div>
             </div>
             
             <!-- Controls -->
@@ -72,6 +81,10 @@
                 <button id="prev-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg transition-colors">Previous</button>
                 <button id="show-answer-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-lg transition-colors">Show</button>
                 <button id="next-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg transition-colors">Next</button>
+            </div>
+
+            <div id="quiz-controls" class="hidden mt-6 flex justify-center items-center">
+                 <button id="quiz-next-btn" class="invisible bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg transition-colors">Next Question</button>
             </div>
             
             <div id="cram-controls" class="hidden mt-6 flex-col items-center">
@@ -87,17 +100,17 @@
         </div>
     </main>
     
-    <!-- Cram Progress Bar -->
-    <div id="cram-progress-bar-container" class="hidden fixed bottom-0 left-0 right-0 z-10 p-4 lg:ml-64">
-        <div id="cram-progress-bar" class="w-full h-2.5 rounded-full bg-gray-700 flex overflow-hidden">
+    <!-- Cram/Quiz Progress Bar -->
+    <div id="progress-bar-container" class="hidden fixed bottom-0 left-0 right-0 z-10 p-4 lg:ml-64">
+        <div id="progress-bar" class="w-full h-2.5 rounded-full bg-gray-700 flex overflow-hidden">
             <!-- Segments will be added here -->
         </div>
     </div>
 
-    <!-- Cram Mode Modal -->
-    <div id="cram-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-40">
+    <!-- Modal -->
+    <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-40">
         <div class="bg-gray-800 rounded-lg p-6 sm:p-8 max-w-lg w-full">
-            <h2 class="text-2xl font-bold mb-2 text-white">Cram Settings</h2>
+            <h2 id="modal-title" class="text-2xl font-bold mb-2 text-white">Settings</h2>
 
             <div class="my-4">
                 <label class="text-sm font-medium text-gray-400">Card Order</label>
@@ -109,14 +122,14 @@
             
             <div class="flex justify-between items-center mb-2">
                  <label class="text-sm font-medium text-gray-400">Select Weeks</label>
-                 <button id="cram-select-all" class="text-sm text-indigo-400 hover:text-indigo-300">Select All</button>
+                 <button id="select-all" class="text-sm text-indigo-400 hover:text-indigo-300">Select All</button>
             </div>
-            <div id="cram-week-selection" class="grid grid-cols-4 sm:grid-cols-6 gap-2 mb-6">
+            <div id="week-selection" class="grid grid-cols-4 sm:grid-cols-6 gap-2 mb-6">
                 <!-- Grid items for weeks will be populated here -->
             </div>
             <div class="flex justify-end space-x-4">
-                <button id="cancel-cram-btn" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg">Cancel</button>
-                <button id="begin-cram-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg">Begin Session</button>
+                <button id="cancel-btn" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg">Cancel</button>
+                <button id="begin-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg">Begin Session</button>
             </div>
         </div>
     </div>
@@ -678,19 +691,21 @@
         let groupedByTag = {};
         
         // --- State ---
-        let isCramming = false;
-        let cramDeck = [];
-        let learningQueue = [];
+        let currentMode = 'deck'; // deck, quiz, cram
+        let sessionDeck = [];
+        let sessionQueue = [];
         let currentDeck = [];
         let currentDeckIndex = 0;
+        let isAnswersHidden = false;
 
         // --- DOM Elements ---
         const sidebar = document.getElementById('sidebar');
         const sidebarContent = document.getElementById('sidebar-content');
         const sidebarOverlay = document.getElementById('sidebar-overlay');
         const hamburgerBtn = document.getElementById('hamburger-btn');
-        const questionArea = document.getElementById('question-area');
+        const questionTextArea = document.getElementById('question-text-area');
         const answerArea = document.getElementById('answer-area');
+        const quizOptionsArea = document.getElementById('quiz-options-area');
         const tagDisplay = document.getElementById('tag-display');
         const progressDisplay = document.getElementById('progress-display');
         const cardContainer = document.getElementById('card-container');
@@ -699,26 +714,33 @@
         const showAnswerBtn = document.getElementById('show-answer-btn');
         const prevBtn = document.getElementById('prev-btn');
         const nextBtn = document.getElementById('next-btn');
+        const toggleAnswerBtn = document.getElementById('toggle-answer-view-btn');
+
+        const quizControls = document.getElementById('quiz-controls');
+        const quizNextBtn = document.getElementById('quiz-next-btn');
 
         const cramControls = document.getElementById('cram-controls');
         const cramShowAnswerBtn = document.getElementById('cram-show-answer-btn');
         const cramFeedback = document.getElementById('cram-feedback');
-        const cramProgressBarContainer = document.getElementById('cram-progress-bar-container');
-        const cramProgressBar = document.getElementById('cram-progress-bar');
         
-        const cramModal = document.getElementById('cram-modal');
+        const progressBarContainer = document.getElementById('progress-bar-container');
+        const progressBar = document.getElementById('progress-bar');
+        
+        const modal = document.getElementById('modal');
+        const modalTitle = document.getElementById('modal-title');
+        const startQuizBtn = document.getElementById('start-quiz-btn');
         const startCramBtn = document.getElementById('start-cram-btn');
-        const cancelCramBtn = document.getElementById('cancel-cram-btn');
-        const beginCramBtn = document.getElementById('begin-cram-btn');
-        const cramWeekSelection = document.getElementById('cram-week-selection');
-        const cramSelectAllBtn = document.getElementById('cram-select-all');
+        const cancelBtn = document.getElementById('cancel-btn');
+        const beginBtn = document.getElementById('begin-btn');
+        const weekSelection = document.getElementById('week-selection');
+        const selectAllBtn = document.getElementById('select-all');
         const orderSelector = document.getElementById('order-selector');
 
         // --- Initialization ---
         function initialize() {
             groupCardsByTag();
             renderSidebar();
-            renderCramModalOptions();
+            renderModalOptions();
             startDeckView('All');
             setupEventListeners();
         }
@@ -731,7 +753,28 @@
         function groupCardsByTag() {
             flashcardData.forEach((card, index) => {
                 if (!groupedByTag[card.t]) groupedByTag[card.t] = [];
-                groupedByTag[card.t].push({ ...card, originalIndex: index });
+                const newCard = { ...card, originalIndex: index };
+                
+                // Pre-parse options for quiz mode
+                const parts = card.q.split('<br><br>');
+                if (parts.length > 1) {
+                    newCard.questionText = parts[0];
+                    newCard.options = parts[1].split('<br>').map(opt => opt.replace(/^[a-d]\)\s*/, '').trim());
+                } else {
+                    newCard.questionText = card.q;
+                    newCard.options = [];
+                }
+                groupedByTag[card.t].push(newCard);
+            });
+            flashcardData.forEach(card => {
+                 const parts = card.q.split('<br><br>');
+                if (parts.length > 1) {
+                    card.questionText = parts[0];
+                    card.options = parts[1].split('<br>').map(opt => opt.replace(/^[a-d]\)\s*/, '').trim());
+                } else {
+                    card.questionText = card.q;
+                    card.options = [];
+                }
             });
         }
 
@@ -744,18 +787,16 @@
                 button.textContent = tag.replace(/_/g, ' ');
                 button.dataset.tag = tag;
                 button.addEventListener('click', () => {
-                    exitCramMode();
+                    exitSession();
                     startDeckView(tag);
-                    if (window.innerWidth < 1024) { // lg breakpoint
-                        toggleSidebar();
-                    }
+                    if (window.innerWidth < 1024) { toggleSidebar(); }
                 });
                 sidebarContent.appendChild(button);
             });
         }
         
-        function renderCramModalOptions() {
-             cramWeekSelection.innerHTML = '';
+        function renderModalOptions() {
+             weekSelection.innerHTML = '';
              Object.keys(groupedByTag).sort().forEach(tag => {
                 const button = document.createElement('button');
                 button.dataset.tag = tag;
@@ -763,10 +804,9 @@
                 button.textContent = tag.replace('week', '');
                 button.dataset.selected = 'false';
                 button.addEventListener('click', () => {
-                    const isSelected = button.dataset.selected === 'true';
-                    button.dataset.selected = isSelected ? 'false' : 'true';
+                    button.dataset.selected = button.dataset.selected === 'true' ? 'false' : 'true';
                 });
-                cramWeekSelection.appendChild(button);
+                weekSelection.appendChild(button);
              });
         }
 
@@ -777,12 +817,14 @@
             showAnswerBtn.addEventListener('click', showAnswer);
             prevBtn.addEventListener('click', showPrevDeckCard);
             nextBtn.addEventListener('click', showNextDeckCard);
+            toggleAnswerBtn.addEventListener('click', toggleHideAnswers);
 
-            startCramBtn.addEventListener('click', () => cramModal.classList.remove('hidden'));
-            cancelCramBtn.addEventListener('click', () => cramModal.classList.add('hidden'));
+            startCramBtn.addEventListener('click', () => openModal('cram'));
+            startQuizBtn.addEventListener('click', () => openModal('quiz'));
+            cancelBtn.addEventListener('click', () => modal.classList.add('hidden'));
             
-            cramSelectAllBtn.addEventListener('click', () => {
-                const buttons = cramWeekSelection.querySelectorAll('.week-selector-btn');
+            selectAllBtn.addEventListener('click', () => {
+                const buttons = weekSelection.querySelectorAll('.week-selector-btn');
                 const shouldSelectAll = Array.from(buttons).some(b => b.dataset.selected === 'false');
                 buttons.forEach(b => b.dataset.selected = shouldSelectAll);
             });
@@ -799,22 +841,38 @@
                 }
             });
 
-            beginCramBtn.addEventListener('click', startCramSession);
+            beginBtn.addEventListener('click', startSession);
+            quizNextBtn.addEventListener('click', showNextQuizCard);
             
             cramShowAnswerBtn.addEventListener('click', showAnswer);
             document.querySelectorAll('.cram-feedback-btn').forEach(btn => {
                 btn.addEventListener('click', () => handleCramFeedback(btn.dataset.difficulty));
             });
+
+            document.addEventListener('keydown', (e) => {
+                if (currentMode !== 'deck') return;
+                if (e.key === 'ArrowRight') showNextDeckCard();
+                else if (e.key === 'ArrowLeft') showPrevDeckCard();
+            });
+        }
+
+        function openModal(mode) {
+            currentMode = mode;
+            modalTitle.textContent = mode === 'cram' ? 'Cram Settings' : 'Quiz Settings';
+            modal.classList.remove('hidden');
         }
 
         function startDeckView(tag) {
             currentDeck = (tag === 'All') ? flashcardData : groupedByTag[tag];
             currentDeckIndex = 0;
+            isAnswersHidden = false; // Default to showing answers
             
             cardContainer.classList.remove('hidden');
             cardContainer.classList.add('flex');
             normalControls.classList.remove('hidden');
             normalControls.classList.add('flex');
+            quizOptionsArea.classList.add('hidden');
+            toggleAnswerBtn.classList.remove('hidden');
 
             showDeckCard(currentDeckIndex);
         }
@@ -823,12 +881,30 @@
             if (index < 0 || index >= currentDeck.length) return;
             
             const cardData = currentDeck[index];
-            questionArea.innerHTML = cardData.q;
+            questionTextArea.innerHTML = cardData.q;
+            questionTextArea.classList.remove('hidden');
             answerArea.innerHTML = cardData.a;
-            answerArea.classList.add('hidden');
+            
+            if (isAnswersHidden) {
+                // "Hide Answers" is ON: Hide the answer, show the "Show" button
+                answerArea.classList.add('hidden');
+                showAnswerBtn.classList.remove('hidden');
+                toggleAnswerBtn.classList.add('bg-indigo-600'); // Indicate active state
+            } else {
+                // "Hide Answers" is OFF: Show the answer, hide the "Show" button
+                answerArea.classList.remove('hidden');
+                showAnswerBtn.classList.add('hidden');
+                toggleAnswerBtn.classList.remove('bg-indigo-600'); // Indicate inactive state
+            }
+            
             tagDisplay.textContent = cardData.t;
             progressDisplay.textContent = `${index + 1} / ${currentDeck.length}`;
-            cardContainer.scrollTop = 0; // Scroll to top for new card
+            cardContainer.scrollTop = 0; 
+        }
+
+        function toggleHideAnswers() {
+            isAnswersHidden = !isAnswersHidden;
+            showDeckCard(currentDeckIndex);
         }
         
         function showPrevDeckCard() {
@@ -847,65 +923,67 @@
 
         function showAnswer() {
             answerArea.classList.remove('hidden');
-            if (isCramming) {
+            if (currentMode === 'cram') {
                 cramShowAnswerBtn.classList.add('hidden');
                 cramFeedback.classList.remove('hidden');
             }
         }
         
-        // --- Cram Mode Logic ---
-        function startCramSession() {
-            const selectedTags = Array.from(cramWeekSelection.querySelectorAll('.week-selector-btn[data-selected="true"]'))
-                                      .map(btn => btn.dataset.tag);
-            
+        // --- Session Logic (Quiz & Cram) ---
+        function startSession() {
+            const selectedTags = Array.from(weekSelection.querySelectorAll('.week-selector-btn[data-selected="true"]')).map(btn => btn.dataset.tag);
             if (selectedTags.length === 0) return;
-            
             const selectedOrder = orderSelector.querySelector('.order-selector-btn.bg-indigo-600').dataset.order;
 
-            isCramming = true;
             let deck = flashcardData.filter(card => selectedTags.includes(card.t));
-            
             if (selectedOrder === 'random') {
                 deck.sort(() => Math.random() - 0.5);
             }
             
-            cramDeck = deck.map((card, index) => ({ ...card, cramId: index, status: 'unseen' }));
-            learningQueue = [...cramDeck];
+            sessionDeck = deck.map((card, index) => ({ ...card, sessionId: index, status: 'unseen' }));
+            sessionQueue = [...sessionDeck];
             
-            cramModal.classList.add('hidden');
+            modal.classList.add('hidden');
             normalControls.classList.add('hidden');
+            toggleAnswerBtn.classList.add('hidden');
             cardContainer.classList.remove('hidden');
             cardContainer.classList.add('flex');
-            cramControls.classList.remove('hidden');
-            cramControls.classList.add('flex');
-            cramProgressBarContainer.classList.remove('hidden');
-
-            renderCramProgressBar();
-            showNextCramCard();
+            
+            if(currentMode === 'cram') {
+                cramControls.classList.remove('hidden');
+                cramControls.classList.add('flex');
+                progressBarContainer.classList.remove('hidden');
+                renderProgressBar();
+                showNextCramCard();
+            } else if (currentMode === 'quiz') {
+                quizControls.classList.remove('hidden');
+                quizControls.classList.add('flex');
+                showNextQuizCard();
+            }
         }
 
-        function renderCramProgressBar() {
-            cramProgressBar.innerHTML = '';
-            cramDeck.forEach(card => {
+        function renderProgressBar() {
+            progressBar.innerHTML = '';
+            sessionDeck.forEach(card => {
                 const segment = document.createElement('div');
                 segment.className = 'progress-segment flex-1 h-full bg-gray-600';
-                cramProgressBar.appendChild(segment);
+                progressBar.appendChild(segment);
                 card.progressSegment = segment;
             });
         }
-
+        
         function showNextCramCard() {
-            if (learningQueue.length === 0) {
+            if (sessionQueue.length === 0) {
                 alert("Congratulations! Cram session complete.");
-                exitCramMode();
+                exitSession();
                 return;
             }
-            const cardData = learningQueue[0];
-            questionArea.innerHTML = cardData.q;
+            const cardData = sessionQueue[0];
+            questionTextArea.innerHTML = cardData.q;
             answerArea.innerHTML = cardData.a;
             answerArea.classList.add('hidden');
             tagDisplay.textContent = cardData.t;
-            progressDisplay.textContent = `Remaining: ${learningQueue.length}`;
+            progressDisplay.textContent = `Remaining: ${sessionQueue.length}`;
             cardContainer.scrollTop = 0;
             
             cramShowAnswerBtn.classList.remove('hidden');
@@ -913,45 +991,106 @@
         }
         
         function handleCramFeedback(difficulty) {
-            const currentCard = learningQueue.shift(); // Take card from the front
+            const currentCard = sessionQueue.shift();
             let reinsertIndex;
 
             switch(difficulty) {
-                case 'hard':
-                    reinsertIndex = Math.ceil(learningQueue.length * 0.25);
-                    learningQueue.splice(reinsertIndex, 0, currentCard);
-                    currentCard.status = 'hard';
-                    break;
-                case 'mid':
-                    reinsertIndex = Math.ceil(learningQueue.length * 0.50);
-                    learningQueue.splice(reinsertIndex, 0, currentCard);
-                    currentCard.status = 'mid';
-                    break;
-                case 'easy':
-                    currentCard.status = 'easy';
-                    // Card is not re-inserted, effectively removing it
-                    break;
+                case 'hard': reinsertIndex = Math.ceil(sessionQueue.length * 0.25); break;
+                case 'mid': reinsertIndex = Math.ceil(sessionQueue.length * 0.50); break;
+                case 'easy': break; // Don't re-insert
             }
+            if (reinsertIndex !== undefined) {
+                 sessionQueue.splice(reinsertIndex, 0, currentCard);
+            }
+            currentCard.status = difficulty;
             updateProgressBar(currentCard);
             showNextCramCard();
         }
 
-        function updateProgressBar(card) {
-            const colorMap = {
-                hard: 'bg-red-500',
-                mid: 'bg-yellow-500',
-                easy: 'bg-green-500'
-            };
-            card.progressSegment.className = 'progress-segment flex-1 h-full ' + colorMap[card.status];
+        function showNextQuizCard() {
+            quizNextBtn.classList.add('invisible');
+            if (sessionQueue.length === 0) {
+                alert("Congratulations! Quiz complete.");
+                exitSession();
+                return;
+            }
+            const cardData = sessionQueue[0];
+            questionTextArea.innerHTML = cardData.questionText;
+            answerArea.classList.add('hidden');
+            quizOptionsArea.classList.remove('hidden');
+            quizOptionsArea.innerHTML = '';
+
+            tagDisplay.textContent = cardData.t;
+            progressDisplay.textContent = `Remaining: ${sessionQueue.length}`;
+            cardContainer.scrollTop = 0;
+
+            if (cardData.options.length > 0) {
+                cardData.options.forEach(optionText => {
+                    const button = document.createElement('button');
+                    button.className = 'w-full text-left p-3 rounded-md bg-gray-700 hover:bg-gray-600 transition-colors';
+                    button.textContent = optionText;
+                    button.addEventListener('click', () => handleQuizAnswer(button, optionText, cardData), { once: true });
+                    quizOptionsArea.appendChild(button);
+                });
+            } else {
+                // Fallback for cards with no options
+                const button = document.createElement('button');
+                button.className = 'w-full p-3 rounded-md bg-blue-600 hover:bg-blue-500 transition-colors';
+                button.textContent = 'Show Answer';
+                button.addEventListener('click', () => {
+                    answerArea.innerHTML = cardData.a;
+                    answerArea.classList.remove('hidden');
+                    sessionQueue.push(sessionQueue.shift()); // Re-queue to try again later
+                    quizNextBtn.classList.remove('invisible');
+                    quizOptionsArea.innerHTML = '';
+                }, { once: true });
+                 quizOptionsArea.appendChild(button);
+            }
         }
         
-        function exitCramMode() {
-            if (!isCramming) return;
-            isCramming = false;
+        function handleQuizAnswer(button, selectedAnswer, cardData) {
+            // Normalize both the official answer and the selected answer for comparison
+            const normalize = (str) => str.trim().replace(/\.$/, '').toLowerCase();
+
+            const correctAnswer = normalize(cardData.a);
+            const selected = normalize(selectedAnswer);
+            const isCorrect = selected === correctAnswer;
+            
+            Array.from(quizOptionsArea.children).forEach(btn => {
+                btn.disabled = true;
+                const btnText = normalize(btn.textContent);
+                if (btnText === correctAnswer) {
+                    btn.classList.remove('bg-gray-700', 'hover:bg-gray-600');
+                    btn.classList.add('bg-green-600', 'text-white');
+                }
+            });
+
+            if (!isCorrect) {
+                button.classList.remove('bg-gray-700', 'hover:bg-gray-600');
+                button.classList.add('bg-red-600', 'text-white');
+                sessionQueue.push(sessionQueue.shift()); // Wrong, move to back
+            } else {
+                sessionQueue.shift(); // Correct, remove from queue
+            }
+            
+            quizNextBtn.classList.remove('invisible');
+        }
+
+        function updateProgressBar(card) {
+            const colorMap = { hard: 'bg-red-500', mid: 'bg-yellow-500', easy: 'bg-green-500' };
+            if (card.progressSegment) {
+                card.progressSegment.className = 'progress-segment flex-1 h-full ' + colorMap[card.status];
+            }
+        }
+        
+        function exitSession() {
+            if (currentMode === 'deck') return;
+            currentMode = 'deck';
             cramControls.classList.add('hidden');
-            cramProgressBarContainer.classList.add('hidden');
-            progressDisplay.textContent = ''; // Clear cram progress text
-            startDeckView('All'); // Go back to the default "All" deck view
+            quizControls.classList.add('hidden');
+            progressBarContainer.classList.add('hidden');
+            progressDisplay.textContent = ''; 
+            startDeckView('All');
         }
 
         initialize();
