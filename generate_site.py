@@ -21,10 +21,20 @@ html_template = """
             font-family: 'Inter', sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
-        #sidebar::-webkit-scrollbar { width: 8px; }
-        #sidebar::-webkit-scrollbar-track { background: #1f2937; }
-        #sidebar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
-        #sidebar::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+        /* Custom Scrollbar Styling */
+        #sidebar::-webkit-scrollbar, #card-container::-webkit-scrollbar { 
+            width: 8px; 
+        }
+        #sidebar::-webkit-scrollbar-track, #card-container::-webkit-scrollbar-track { 
+            background: #1f2937; /* bg-gray-800 */
+        }
+        #sidebar::-webkit-scrollbar-thumb, #card-container::-webkit-scrollbar-thumb { 
+            background: #4b5563; /* bg-gray-600 */
+            border-radius: 4px; 
+        }
+        #sidebar::-webkit-scrollbar-thumb:hover, #card-container::-webkit-scrollbar-thumb:hover { 
+            background: #6b7280; /* bg-gray-500 */
+        }
         .progress-segment { transition: background-color 0.3s ease-in-out; }
     </style>
 </head>
@@ -77,7 +87,7 @@ html_template = """
                 </div>
                  <div id="cram-feedback" class="hidden mt-4 flex justify-center items-center space-x-2 md:space-x-4">
                     <button data-difficulty="hard" class="cram-feedback-btn bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors text-sm sm:text-base">Hard</button>
-                    <button data-difficulty="mid" class="cram-feedback-btn bg-[#c76c12] hover:bg-[#b45f10] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors text-sm sm:text-base">Mid</button>
+                    <button data-difficulty="mid" class="cram-feedback-btn bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors text-sm sm:text-base">Mid</button>
                     <button data-difficulty="easy" class="cram-feedback-btn bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors text-sm sm:text-base">Easy</button>
                  </div>
             </div>
@@ -385,7 +395,7 @@ html_template = """
         function updateProgressBar(card) {
             const colorMap = {
                 hard: 'bg-red-500',
-                mid: 'bg-[#c76c12]',
+                mid: 'bg-yellow-500',
                 easy: 'bg-green-500'
             };
             card.progressSegment.className = 'progress-segment flex-1 h-full ' + colorMap[card.status];
