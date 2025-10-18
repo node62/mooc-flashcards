@@ -45,11 +45,6 @@
         </button>
 
         <div class="w-full max-w-3xl">
-            <!-- Cram Progress Bar -->
-            <div id="cram-progress-bar" class="hidden w-full h-2.5 rounded-full bg-gray-700 mb-4 flex overflow-hidden">
-                <!-- Segments will be added here -->
-            </div>
-
             <!-- Header: Progress and Tag -->
             <div class="flex justify-between items-center mb-4 px-2">
                 <div id="tag-display" class="bg-gray-700 text-blue-300 text-sm font-semibold px-3 py-1 rounded-full truncate"></div>
@@ -75,12 +70,19 @@
                 </div>
                  <div id="cram-feedback" class="hidden mt-4 flex justify-center items-center space-x-2 md:space-x-4">
                     <button data-difficulty="hard" class="cram-feedback-btn bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors text-sm sm:text-base">Hard</button>
-                    <button data-difficulty="mid" class="cram-feedback-btn bg-yellow-500 hover:bg-yellow-400 text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors text-sm sm:text-base">Mid</button>
+                    <button data-difficulty="mid" class="cram-feedback-btn bg-[#c76c12] hover:bg-[#b45f10] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors text-sm sm:text-base">Mid</button>
                     <button data-difficulty="easy" class="cram-feedback-btn bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors text-sm sm:text-base">Easy</button>
                  </div>
             </div>
         </div>
     </main>
+    
+    <!-- Cram Progress Bar -->
+    <div id="cram-progress-bar-container" class="hidden fixed bottom-0 left-0 right-0 z-10 p-4 lg:ml-64">
+        <div id="cram-progress-bar" class="w-full h-2.5 rounded-full bg-gray-700 flex overflow-hidden">
+            <!-- Segments will be added here -->
+        </div>
+    </div>
 
     <!-- Cram Mode Modal -->
     <div id="cram-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-40">
@@ -691,6 +693,7 @@
         const cramControls = document.getElementById('cram-controls');
         const cramShowAnswerBtn = document.getElementById('cram-show-answer-btn');
         const cramFeedback = document.getElementById('cram-feedback');
+        const cramProgressBarContainer = document.getElementById('cram-progress-bar-container');
         const cramProgressBar = document.getElementById('cram-progress-bar');
         
         const cramModal = document.getElementById('cram-modal');
@@ -865,7 +868,7 @@
             cardContainer.classList.add('flex');
             cramControls.classList.remove('hidden');
             cramControls.classList.add('flex');
-            cramProgressBar.classList.remove('hidden');
+            cramProgressBarContainer.classList.remove('hidden');
 
             renderCramProgressBar();
             showNextCramCard();
@@ -926,7 +929,7 @@
         function updateProgressBar(card) {
             const colorMap = {
                 hard: 'bg-red-500',
-                mid: 'bg-yellow-500',
+                mid: 'bg-[#c76c12]',
                 easy: 'bg-green-500'
             };
             card.progressSegment.className = 'progress-segment flex-1 h-full ' + colorMap[card.status];
@@ -936,7 +939,7 @@
             if (!isCramming) return;
             isCramming = false;
             cramControls.classList.add('hidden');
-            cramProgressBar.classList.add('hidden');
+            cramProgressBarContainer.classList.add('hidden');
             progressDisplay.textContent = ''; // Clear cram progress text
             startDeckView('All'); // Go back to the default "All" deck view
         }
