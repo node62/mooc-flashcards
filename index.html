@@ -23,8 +23,11 @@
 </head>
 <body class="bg-gray-900 text-gray-200 flex h-full">
 
+    <!-- Sidebar Overlay for Mobile -->
+    <div id="sidebar-overlay" class="fixed inset-0 z-20 bg-black bg-opacity-50 hidden lg:hidden"></div>
+
     <!-- Sidebar -->
-    <aside id="sidebar" class="w-64 bg-gray-800 p-4 overflow-y-auto h-full flex flex-col flex-shrink-0">
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-30 w-64 bg-gray-800 p-4 overflow-y-auto h-full flex flex-col flex-shrink-0 -translate-x-full transition-transform duration-300 ease-in-out lg:translate-x-0">
         <h1 class="text-xl font-bold mb-4 text-white">Decks</h1>
         <div id="sidebar-content" class="flex-grow">
             <!-- Deck/Tag filters will be populated here -->
@@ -35,7 +38,12 @@
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-grow flex flex-col items-center justify-center p-6">
+    <main class="w-full flex-grow flex flex-col items-center justify-center p-4 sm:p-6 lg:ml-64">
+        <!-- Hamburger Menu Button -->
+        <button id="hamburger-btn" class="lg:hidden fixed top-4 left-4 z-10 p-2 rounded-md bg-gray-700 text-white">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+        </button>
+
         <div class="w-full max-w-3xl">
             <!-- Cram Progress Bar -->
             <div id="cram-progress-bar" class="hidden w-full h-2.5 rounded-full bg-gray-700 mb-4 flex overflow-hidden">
@@ -44,20 +52,20 @@
 
             <!-- Header: Progress and Tag -->
             <div class="flex justify-between items-center mb-4 px-2">
-                <div id="tag-display" class="bg-gray-700 text-blue-300 text-sm font-semibold px-3 py-1 rounded-full"></div>
+                <div id="tag-display" class="bg-gray-700 text-blue-300 text-sm font-semibold px-3 py-1 rounded-full truncate"></div>
                 <div id="progress-display" class="text-gray-400 font-medium"></div>
             </div>
 
             <!-- Flashcard Area -->
-            <div id="card-container" class="hidden bg-gray-800 rounded-xl shadow-2xl p-8 flex flex-col justify-center items-start text-left w-full h-96 min-h-[24rem]">
-                <p id="question-area" class="text-xl md:text-2xl leading-relaxed"></p>
-                <p id="answer-area" class="hidden text-2xl md:text-3xl font-bold text-green-400 mt-4"></p>
+            <div id="card-container" class="hidden bg-gray-800 rounded-xl shadow-2xl p-6 sm:p-8 flex flex-col justify-center items-start text-left w-full h-[65vh] max-h-[500px] overflow-y-auto">
+                <p id="question-area" class="text-lg sm:text-xl md:text-2xl leading-relaxed"></p>
+                <p id="answer-area" class="hidden text-xl sm:text-2xl md:text-3xl font-bold text-green-400 mt-4"></p>
             </div>
             
             <!-- Controls -->
             <div id="normal-controls" class="hidden mt-6 justify-center items-center space-x-4">
                 <button id="prev-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg transition-colors">Previous</button>
-                <button id="show-answer-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-lg transition-colors">Show Answer</button>
+                <button id="show-answer-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-lg transition-colors">Show</button>
                 <button id="next-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg transition-colors">Next</button>
             </div>
             
@@ -66,20 +74,18 @@
                      <button id="cram-show-answer-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-lg transition-colors">Show Answer</button>
                 </div>
                  <div id="cram-feedback" class="hidden mt-4 flex justify-center items-center space-x-2 md:space-x-4">
-                    <button data-difficulty="hard" class="cram-feedback-btn bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-6 rounded-lg transition-colors">Hard</button>
-                    <button data-difficulty="mid" class="cram-feedback-btn bg-yellow-500 hover:bg-yellow-400 text-white font-bold py-3 px-6 rounded-lg transition-colors">Mid</button>
-                    <button data-difficulty="easy" class="cram-feedback-btn bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-6 rounded-lg transition-colors">Easy</button>
+                    <button data-difficulty="hard" class="cram-feedback-btn bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors text-sm sm:text-base">Hard</button>
+                    <button data-difficulty="mid" class="cram-feedback-btn bg-yellow-500 hover:bg-yellow-400 text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors text-sm sm:text-base">Mid</button>
+                    <button data-difficulty="easy" class="cram-feedback-btn bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors text-sm sm:text-base">Easy</button>
                  </div>
             </div>
         </div>
     </main>
 
     <!-- Cram Mode Modal -->
-    <div id="cram-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4">
-        <div class="bg-gray-800 rounded-lg p-8 max-w-lg w-full">
-            <div class="flex justify-between items-start">
-                <h2 class="text-2xl font-bold mb-2 text-white">Cram Settings</h2>
-            </div>
+    <div id="cram-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-40">
+        <div class="bg-gray-800 rounded-lg p-6 sm:p-8 max-w-lg w-full">
+            <h2 class="text-2xl font-bold mb-2 text-white">Cram Settings</h2>
 
             <div class="my-4">
                 <label class="text-sm font-medium text-gray-400">Card Order</label>
@@ -667,7 +673,10 @@
         let currentDeckIndex = 0;
 
         // --- DOM Elements ---
+        const sidebar = document.getElementById('sidebar');
         const sidebarContent = document.getElementById('sidebar-content');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        const hamburgerBtn = document.getElementById('hamburger-btn');
         const questionArea = document.getElementById('question-area');
         const answerArea = document.getElementById('answer-area');
         const tagDisplay = document.getElementById('tag-display');
@@ -697,8 +706,13 @@
             groupCardsByTag();
             renderSidebar();
             renderCramModalOptions();
-            startDeckView('All'); // Start with the "All" deck view
+            startDeckView('All');
             setupEventListeners();
+        }
+        
+        function toggleSidebar() {
+            sidebar.classList.toggle('-translate-x-full');
+            sidebarOverlay.classList.toggle('hidden');
         }
 
         function groupCardsByTag() {
@@ -719,6 +733,9 @@
                 button.addEventListener('click', () => {
                     exitCramMode();
                     startDeckView(tag);
+                    if (window.innerWidth < 1024) { // lg breakpoint
+                        toggleSidebar();
+                    }
                 });
                 sidebarContent.appendChild(button);
             });
@@ -741,6 +758,9 @@
         }
 
         function setupEventListeners() {
+            hamburgerBtn.addEventListener('click', toggleSidebar);
+            sidebarOverlay.addEventListener('click', toggleSidebar);
+
             showAnswerBtn.addEventListener('click', showAnswer);
             prevBtn.addEventListener('click', showPrevDeckCard);
             nextBtn.addEventListener('click', showNextDeckCard);
@@ -795,6 +815,7 @@
             answerArea.classList.add('hidden');
             tagDisplay.textContent = cardData.t;
             progressDisplay.textContent = `${index + 1} / ${currentDeck.length}`;
+            cardContainer.scrollTop = 0; // Scroll to top for new card
         }
         
         function showPrevDeckCard() {
@@ -872,6 +893,7 @@
             answerArea.classList.add('hidden');
             tagDisplay.textContent = cardData.t;
             progressDisplay.textContent = `Remaining: ${learningQueue.length}`;
+            cardContainer.scrollTop = 0;
             
             cramShowAnswerBtn.classList.remove('hidden');
             cramFeedback.classList.add('hidden');
