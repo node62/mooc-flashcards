@@ -77,9 +77,21 @@
     <!-- Cram Mode Modal -->
     <div id="cram-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4">
         <div class="bg-gray-800 rounded-lg p-8 max-w-lg w-full">
-            <h2 class="text-2xl font-bold mb-2 text-white">Select Weeks to Cram</h2>
-            <div class="flex justify-end mb-4">
-                <button id="cram-select-all" class="text-sm text-indigo-400 hover:text-indigo-300">Select All</button>
+            <div class="flex justify-between items-start">
+                <h2 class="text-2xl font-bold mb-2 text-white">Cram Settings</h2>
+            </div>
+
+            <div class="my-4">
+                <label class="text-sm font-medium text-gray-400">Card Order</label>
+                <div id="order-selector" class="mt-2 flex rounded-md bg-gray-700 p-1">
+                    <button data-order="random" class="order-selector-btn flex-1 p-2 text-sm rounded-md transition-colors bg-indigo-600">Random</button>
+                    <button data-order="sequence" class="order-selector-btn flex-1 p-2 text-sm rounded-md transition-colors bg-transparent">Sequence</button>
+                </div>
+            </div>
+            
+            <div class="flex justify-between items-center mb-2">
+                 <label class="text-sm font-medium text-gray-400">Select Weeks</label>
+                 <button id="cram-select-all" class="text-sm text-indigo-400 hover:text-indigo-300">Select All</button>
             </div>
             <div id="cram-week-selection" class="grid grid-cols-4 sm:grid-cols-6 gap-2 mb-6">
                 <!-- Grid items for weeks will be populated here -->
@@ -678,6 +690,7 @@
         const beginCramBtn = document.getElementById('begin-cram-btn');
         const cramWeekSelection = document.getElementById('cram-week-selection');
         const cramSelectAllBtn = document.getElementById('cram-select-all');
+        const orderSelector = document.getElementById('order-selector');
 
         // --- Initialization ---
         function initialize() {
@@ -734,11 +747,25 @@
 
             startCramBtn.addEventListener('click', () => cramModal.classList.remove('hidden'));
             cancelCramBtn.addEventListener('click', () => cramModal.classList.add('hidden'));
+            
             cramSelectAllBtn.addEventListener('click', () => {
                 const buttons = cramWeekSelection.querySelectorAll('.week-selector-btn');
                 const shouldSelectAll = Array.from(buttons).some(b => b.dataset.selected === 'false');
                 buttons.forEach(b => b.dataset.selected = shouldSelectAll);
             });
+
+            orderSelector.addEventListener('click', (e) => {
+                const targetButton = e.target.closest('.order-selector-btn');
+                if (targetButton) {
+                    orderSelector.querySelectorAll('.order-selector-btn').forEach(btn => {
+                        btn.classList.remove('bg-indigo-600');
+                        btn.classList.add('bg-transparent');
+                    });
+                    targetButton.classList.add('bg-indigo-600');
+                    targetButton.classList.remove('bg-transparent');
+                }
+            });
+
             beginCramBtn.addEventListener('click', startCramSession);
             
             cramShowAnswerBtn.addEventListener('click', showAnswer);
@@ -798,10 +825,15 @@
                                       .map(btn => btn.dataset.tag);
             
             if (selectedTags.length === 0) return;
+            
+            const selectedOrder = orderSelector.querySelector('.order-selector-btn.bg-indigo-600').dataset.order;
 
             isCramming = true;
             let deck = flashcardData.filter(card => selectedTags.includes(card.t));
-            deck.sort(() => Math.random() - 0.5);
+            
+            if (selectedOrder === 'random') {
+                deck.sort(() => Math.random() - 0.5);
+            }
             
             cramDeck = deck.map((card, index) => ({ ...card, cramId: index, status: 'unseen' }));
             learningQueue = [...cramDeck];
