@@ -46,9 +46,6 @@
             <button id="start-quiz-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded-lg transition-colors">
                 Quiz Mode
             </button>
-            <button id="start-cram-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg transition-colors">
-                Cram Mode
-            </button>
         </div>
     </aside>
 
@@ -86,31 +83,13 @@
             <div id="quiz-controls" class="hidden mt-6 flex justify-center items-center">
                  <button id="quiz-next-btn" class="invisible bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg transition-colors">Next Question</button>
             </div>
-            
-            <div id="cram-controls" class="hidden mt-6 flex-col items-center">
-                <div class="flex justify-center items-center space-x-4">
-                     <button id="cram-show-answer-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-lg transition-colors">Show Answer</button>
-                </div>
-                 <div id="cram-feedback" class="hidden mt-4 flex justify-center items-center space-x-2 md:space-x-4">
-                    <button data-difficulty="hard" class="cram-feedback-btn bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors text-sm sm:text-base">Hard</button>
-                    <button data-difficulty="mid" class="cram-feedback-btn bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors text-sm sm:text-base">Mid</button>
-                    <button data-difficulty="easy" class="cram-feedback-btn bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors text-sm sm:text-base">Easy</button>
-                 </div>
-            </div>
         </div>
     </main>
     
-    <!-- Cram/Quiz Progress Bar -->
-    <div id="progress-bar-container" class="hidden fixed bottom-0 left-0 right-0 z-10 p-4 lg:ml-64">
-        <div id="progress-bar" class="w-full h-2.5 rounded-full bg-gray-700 flex overflow-hidden">
-            <!-- Segments will be added here -->
-        </div>
-    </div>
-
     <!-- Modal -->
     <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-40">
         <div class="bg-gray-800 rounded-lg p-6 sm:p-8 max-w-lg w-full">
-            <h2 id="modal-title" class="text-2xl font-bold mb-2 text-white">Settings</h2>
+            <h2 id="modal-title" class="text-2xl font-bold mb-2 text-white">Quiz Settings</h2>
 
             <div class="my-4">
                 <label class="text-sm font-medium text-gray-400">Card Order</label>
@@ -129,7 +108,7 @@
             </div>
             <div class="flex justify-end space-x-4">
                 <button id="cancel-btn" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg">Cancel</button>
-                <button id="begin-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg">Begin Session</button>
+                <button id="begin-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg">Begin Quiz</button>
             </div>
         </div>
     </div>
@@ -691,8 +670,7 @@
         let groupedByTag = {};
         
         // --- State ---
-        let currentMode = 'deck'; // deck, quiz, cram
-        let sessionDeck = [];
+        let currentMode = 'deck'; // deck, quiz
         let sessionQueue = [];
         let currentDeck = [];
         let currentDeckIndex = 0;
@@ -718,18 +696,10 @@
 
         const quizControls = document.getElementById('quiz-controls');
         const quizNextBtn = document.getElementById('quiz-next-btn');
-
-        const cramControls = document.getElementById('cram-controls');
-        const cramShowAnswerBtn = document.getElementById('cram-show-answer-btn');
-        const cramFeedback = document.getElementById('cram-feedback');
-        
-        const progressBarContainer = document.getElementById('progress-bar-container');
-        const progressBar = document.getElementById('progress-bar');
         
         const modal = document.getElementById('modal');
         const modalTitle = document.getElementById('modal-title');
         const startQuizBtn = document.getElementById('start-quiz-btn');
-        const startCramBtn = document.getElementById('start-cram-btn');
         const cancelBtn = document.getElementById('cancel-btn');
         const beginBtn = document.getElementById('begin-btn');
         const weekSelection = document.getElementById('week-selection');
@@ -819,8 +789,7 @@
             nextBtn.addEventListener('click', showNextDeckCard);
             toggleAnswerBtn.addEventListener('click', toggleHideAnswers);
 
-            startCramBtn.addEventListener('click', () => openModal('cram'));
-            startQuizBtn.addEventListener('click', () => openModal('quiz'));
+            startQuizBtn.addEventListener('click', openQuizModal);
             cancelBtn.addEventListener('click', () => modal.classList.add('hidden'));
             
             selectAllBtn.addEventListener('click', () => {
@@ -843,11 +812,6 @@
 
             beginBtn.addEventListener('click', startSession);
             quizNextBtn.addEventListener('click', showNextQuizCard);
-            
-            cramShowAnswerBtn.addEventListener('click', showAnswer);
-            document.querySelectorAll('.cram-feedback-btn').forEach(btn => {
-                btn.addEventListener('click', () => handleCramFeedback(btn.dataset.difficulty));
-            });
 
             document.addEventListener('keydown', (e) => {
                 if (currentMode !== 'deck') return;
@@ -856,9 +820,8 @@
             });
         }
 
-        function openModal(mode) {
-            currentMode = mode;
-            modalTitle.textContent = mode === 'cram' ? 'Cram Settings' : 'Quiz Settings';
+        function openQuizModal() {
+            currentMode = 'quiz';
             modal.classList.remove('hidden');
         }
 
@@ -923,13 +886,9 @@
 
         function showAnswer() {
             answerArea.classList.remove('hidden');
-            if (currentMode === 'cram') {
-                cramShowAnswerBtn.classList.add('hidden');
-                cramFeedback.classList.remove('hidden');
-            }
         }
         
-        // --- Session Logic (Quiz & Cram) ---
+        // --- Session Logic (Quiz) ---
         function startSession() {
             const selectedTags = Array.from(weekSelection.querySelectorAll('.week-selector-btn[data-selected="true"]')).map(btn => btn.dataset.tag);
             if (selectedTags.length === 0) return;
@@ -940,73 +899,18 @@
                 deck.sort(() => Math.random() - 0.5);
             }
             
-            sessionDeck = deck.map((card, index) => ({ ...card, sessionId: index, status: 'unseen' }));
-            sessionQueue = [...sessionDeck];
+            sessionQueue = [...deck];
             
             modal.classList.add('hidden');
             normalControls.classList.add('hidden');
             toggleAnswerBtn.classList.add('hidden');
             cardContainer.classList.remove('hidden');
             cardContainer.classList.add('flex');
-            
-            if(currentMode === 'cram') {
-                cramControls.classList.remove('hidden');
-                cramControls.classList.add('flex');
-                progressBarContainer.classList.remove('hidden');
-                renderProgressBar();
-                showNextCramCard();
-            } else if (currentMode === 'quiz') {
-                quizControls.classList.remove('hidden');
-                quizControls.classList.add('flex');
-                showNextQuizCard();
-            }
-        }
-
-        function renderProgressBar() {
-            progressBar.innerHTML = '';
-            sessionDeck.forEach(card => {
-                const segment = document.createElement('div');
-                segment.className = 'progress-segment flex-1 h-full bg-gray-600';
-                progressBar.appendChild(segment);
-                card.progressSegment = segment;
-            });
+            quizControls.classList.remove('hidden');
+            quizControls.classList.add('flex');
+            showNextQuizCard();
         }
         
-        function showNextCramCard() {
-            if (sessionQueue.length === 0) {
-                alert("Congratulations! Cram session complete.");
-                exitSession();
-                return;
-            }
-            const cardData = sessionQueue[0];
-            questionTextArea.innerHTML = cardData.q;
-            answerArea.innerHTML = cardData.a;
-            answerArea.classList.add('hidden');
-            tagDisplay.textContent = cardData.t;
-            progressDisplay.textContent = `Remaining: ${sessionQueue.length}`;
-            cardContainer.scrollTop = 0;
-            
-            cramShowAnswerBtn.classList.remove('hidden');
-            cramFeedback.classList.add('hidden');
-        }
-        
-        function handleCramFeedback(difficulty) {
-            const currentCard = sessionQueue.shift();
-            let reinsertIndex;
-
-            switch(difficulty) {
-                case 'hard': reinsertIndex = Math.ceil(sessionQueue.length * 0.25); break;
-                case 'mid': reinsertIndex = Math.ceil(sessionQueue.length * 0.50); break;
-                case 'easy': break; // Don't re-insert
-            }
-            if (reinsertIndex !== undefined) {
-                 sessionQueue.splice(reinsertIndex, 0, currentCard);
-            }
-            currentCard.status = difficulty;
-            updateProgressBar(currentCard);
-            showNextCramCard();
-        }
-
         function showNextQuizCard() {
             quizNextBtn.classList.add('invisible');
             if (sessionQueue.length === 0) {
@@ -1075,20 +979,11 @@
             
             quizNextBtn.classList.remove('invisible');
         }
-
-        function updateProgressBar(card) {
-            const colorMap = { hard: 'bg-red-500', mid: 'bg-yellow-500', easy: 'bg-green-500' };
-            if (card.progressSegment) {
-                card.progressSegment.className = 'progress-segment flex-1 h-full ' + colorMap[card.status];
-            }
-        }
         
         function exitSession() {
             if (currentMode === 'deck') return;
             currentMode = 'deck';
-            cramControls.classList.add('hidden');
             quizControls.classList.add('hidden');
-            progressBarContainer.classList.add('hidden');
             progressDisplay.textContent = ''; 
             startDeckView('All');
         }
