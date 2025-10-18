@@ -1,0 +1,893 @@
+
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Static Flashcards</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        #sidebar::-webkit-scrollbar { width: 8px; }
+        #sidebar::-webkit-scrollbar-track { background: #1f2937; }
+        #sidebar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        #sidebar::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+        .progress-segment { transition: background-color 0.3s ease-in-out; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 flex h-full">
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="w-64 bg-gray-800 p-4 overflow-y-auto h-full flex flex-col flex-shrink-0">
+        <h1 class="text-xl font-bold mb-4 text-white">Decks</h1>
+        <div id="sidebar-content" class="flex-grow">
+            <!-- Deck/Tag filters will be populated here -->
+        </div>
+        <button id="start-cram-btn" class="mt-4 w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg transition-colors">
+            Cram Mode
+        </button>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-grow flex flex-col items-center justify-center p-6">
+        <div class="w-full max-w-3xl">
+            <!-- Cram Progress Bar -->
+            <div id="cram-progress-bar" class="hidden w-full h-2.5 rounded-full bg-gray-700 mb-4 flex overflow-hidden">
+                <!-- Segments will be added here -->
+            </div>
+
+            <!-- Header: Progress and Tag -->
+            <div class="flex justify-between items-center mb-4 px-2">
+                <div id="tag-display" class="bg-gray-700 text-blue-300 text-sm font-semibold px-3 py-1 rounded-full"></div>
+                <div id="progress-display" class="text-gray-400 font-medium"></div>
+            </div>
+
+            <!-- Flashcard Area -->
+            <div id="card-container" class="hidden bg-gray-800 rounded-xl shadow-2xl p-8 flex flex-col justify-center items-center text-center w-full h-96 min-h-[24rem]">
+                <p id="question-area" class="text-xl md:text-2xl leading-relaxed"></p>
+                <p id="answer-area" class="hidden text-2xl md:text-3xl font-bold text-green-400 mt-4"></p>
+            </div>
+            
+            <!-- Controls -->
+            <div id="normal-controls" class="hidden mt-6 justify-center items-center space-x-4">
+                <button id="prev-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg transition-colors">Previous</button>
+                <button id="show-answer-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-lg transition-colors">Show Answer</button>
+                <button id="next-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg transition-colors">Next</button>
+            </div>
+            
+            <div id="cram-controls" class="hidden mt-6 flex-col items-center">
+                <div class="flex justify-center items-center space-x-4">
+                     <button id="cram-show-answer-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-lg transition-colors">Show Answer</button>
+                </div>
+                 <div id="cram-feedback" class="hidden mt-4 flex justify-center items-center space-x-2 md:space-x-4">
+                    <button data-difficulty="hard" class="cram-feedback-btn bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-6 rounded-lg transition-colors">Hard</button>
+                    <button data-difficulty="mid" class="cram-feedback-btn bg-yellow-500 hover:bg-yellow-400 text-white font-bold py-3 px-6 rounded-lg transition-colors">Mid</button>
+                    <button data-difficulty="easy" class="cram-feedback-btn bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-6 rounded-lg transition-colors">Easy</button>
+                 </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Cram Mode Modal -->
+    <div id="cram-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-lg p-8 max-w-lg w-full">
+            <h2 class="text-2xl font-bold mb-2 text-white">Select Weeks to Cram</h2>
+            <div class="flex justify-end mb-4">
+                <button id="cram-select-all" class="text-sm text-indigo-400 hover:text-indigo-300">Select All</button>
+            </div>
+            <div id="cram-week-selection" class="grid grid-cols-4 sm:grid-cols-6 gap-2 mb-6">
+                <!-- Grid items for weeks will be populated here -->
+            </div>
+            <div class="flex justify-end space-x-4">
+                <button id="cancel-cram-btn" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg">Cancel</button>
+                <button id="begin-cram-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg">Begin Session</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const flashcardData = [
+    {
+        "q": "Which of these is not a characteristic of fitness?<br><br>a) Fitness is environment-specific.<br>b) Fitness is species-specific.<br>c) Higher reproductive rate means higher fitness.<br>d) Fitness should be measured across several generations.",
+        "a": "Higher reproductive rate means higher fitness.",
+        "t": "week01"
+    },
+    {
+        "q": "Who amongst these is considered the father of Biogeography?<br><br>a) Theophrastus<br>b) Linnaeus<br>c) Malthus<br>d) Humboldt",
+        "a": "Humboldt",
+        "t": "week01"
+    },
+    {
+        "q": "In the Greek word root of Ecology, Oikos refers to<br><br>a) household<br>b) preservation<br>c) environment<br>d) study",
+        "a": "household",
+        "t": "week01"
+    },
+    {
+        "q": "In the Greek word root of Ecology, logos refers to<br><br>a) household<br>b) preservation<br>c) environment<br>d) study",
+        "a": "study",
+        "t": "week01"
+    },
+    {
+        "q": "Which of these is not a step in natural selection?<br><br>a) variation<br>b) underpopulation<br>c) struggle for existence<br>d) survival of the fittest",
+        "a": "underpopulation",
+        "t": "week01"
+    },
+    {
+        "q": "Ecology is the scientific study of                      that determine the distribution and abundance of organisms. (Fill in the blanks)<br><br>a) statics<br>b) interactions<br>c) dynamics<br>d) habitat",
+        "a": "interactions",
+        "t": "week01"
+    },
+    {
+        "q": "Which of these is not a characteristic of fitness?<br><br>a) Fitness is environment-specific.<br>b) Fitness is species-specific.<br>c) Fitness works on traits such as size and speed.<br>d) Fitness should be measured across several generations.",
+        "a": "Fitness works on traits such as size and speed.",
+        "t": "week01"
+    },
+    {
+        "q": "Ecology is the scientific study of interactions among organisms and their                  . (Fill in the blanks)<br><br>a) habitat<br>b) niche<br>c) environment<br>d) population",
+        "a": "environment",
+        "t": "week01"
+    },
+    {
+        "q": "\"Enquiry into plants\" is a book written by<br><br>a) Theophrastus<br>b) Linnaeus<br>c) Malthus<br>d) Humboldt",
+        "a": "Theophrastus",
+        "t": "week01"
+    },
+    {
+        "q": "Which of these is not a kind of selection<br><br>a) directional<br>b) stochastic<br>c) disruptive<br>d) stabilising",
+        "a": "stochastic",
+        "t": "week01"
+    },
+    {
+        "q": "Hierarchy emerges almost inevitably through a wide variety of evolutionary processes, for thesimple reason that hierarchical structures are..........<br><br>a) perfect<br>b) imperfect<br>c) stable<br>d) unstable",
+        "a": "stable",
+        "t": "week02"
+    },
+    {
+        "q": "The hierarchical system was given by<br><br>a) Simon<br>b) Watson<br>c) Hutchinson<br>d) Humboldt",
+        "a": "Simon",
+        "t": "week02"
+    },
+    {
+        "q": "The emergent principle can be stated as<br><br>a) Whole = sum of parts<br>b) Whole < sum of parts<br>c) Whole > sum of parts<br>d) None of these",
+        "a": "Whole > sum of parts",
+        "t": "week02"
+    },
+    {
+        "q": "\"the diversity that exists within an ecosystem\" is<br><br>a) alpha (\u03b1) biodiversity<br>b) beta (\u03b2) biodiversity<br>c) gamma (\u03b3) biodiversity<br>d) delta (\u03b4) biodiversity",
+        "a": "alpha (\u03b1) biodiversity",
+        "t": "week02"
+    },
+    {
+        "q": "The mitochondrion is a / an<br><br>a) Sub-cellular organelle<br>b) Cell<br>c) Tissue<br>d) Organ",
+        "a": "Sub-cellular organelle",
+        "t": "week02"
+    },
+    {
+        "q": "For more biodiversity, the level of disturbance should be<br><br>a) less<br>b) intermediate<br>c) more<br>d) none of these",
+        "a": "intermediate",
+        "t": "week02"
+    },
+    {
+        "q": "There is more biodiversity in areas with<br><br>a) less competition, less predation<br>b) less competition, more predation<br>c) more competition, more predation<br>d) more competition, less predation",
+        "a": "more competition, more predation",
+        "t": "week02"
+    },
+    {
+        "q": "\"the diversity that exists among different geographies\" is<br><br>a) alpha (\u03b1) biodiversity<br>b) beta (\u03b2) biodiversity<br>c) gamma (\u03b3) biodiversity<br>d) delta (\u03b4) biodiversity",
+        "a": "gamma (\u03b3) biodiversity",
+        "t": "week02"
+    },
+    {
+        "q": "The laboratory approach to Ecology uses<br><br>a) equations<br>b) models<br>c) observations<br>d) experiments",
+        "a": "experiments",
+        "t": "week02"
+    },
+    {
+        "q": "\"groups of actually or potentially interbreeding natural populations, which are reproductively isolated from other such groups\" is a definition of<br><br>a) cells<br>b) species<br>c) ecosystems<br>d) biomes",
+        "a": "species",
+        "t": "week02"
+    },
+    {
+        "q": "I observe a monkey take a tick out of another monkey's head and eat it. In the social context, this behaviour would be called<br><br>a) tick hunting<br>b) auto grooming<br>c) allo grooming<br>d) foraging",
+        "a": "allo grooming",
+        "t": "week03"
+    },
+    {
+        "q": "The scientific study of animal behaviour is called<br><br>a) behaviourism<br>b) ecology<br>c) ethology<br>d) prey-predator dynamics",
+        "a": "ethology",
+        "t": "week03"
+    },
+    {
+        "q": "Hamilton's rule can be stated as<br><br>a) rB < C<br>b) rB > C<br>c) rB = C<br>d) rB + C = 0",
+        "a": "rB > C",
+        "t": "week03"
+    },
+    {
+        "q": "Harmonious interactions occur where<br><br>a) at least one participant is benefited<br>b) at least one participant is unharmed<br>c) both participants are benefitted<br>d) both participants are unharmed",
+        "a": "both participants are unharmed",
+        "t": "week03"
+    },
+    {
+        "q": "The interaction between exotic shrubs and trees through the action of seed predators is an example of<br><br>a) infraspecific competition<br>b) apparent competition<br>c) disguised competition<br>d) harmonious competition",
+        "a": "apparent competition",
+        "t": "week03"
+    },
+    {
+        "q": "An inventory of behaviours exhibited by an animal during a behaviour exercise is called<br><br>a) ecogram<br>b) ethogram<br>c) behaviourogram<br>d) animalogram",
+        "a": "ethogram",
+        "t": "week03"
+    },
+    {
+        "q": "Trampling of grass due to the movement of animals is an example of<br><br>a) mutualism<br>b) amensalism<br>c) commensalism<br>d) protocooperation",
+        "a": "amensalism",
+        "t": "week03"
+    },
+    {
+        "q": "I observe a bird take a tick out of another bird's head and eat it. In the social context, this behaviour would be called<br><br>a) tick hunting<br>b) auto grooming<br>c) allo grooming<br>d) foraging",
+        "a": "allo grooming",
+        "t": "week03"
+    },
+    {
+        "q": "Birds on giraffe are an example of<br><br>a) colony<br>b) commensalism<br>c) protocooperation<br>d) allelopathy",
+        "a": "protocooperation",
+        "t": "week03"
+    },
+    {
+        "q": "Egrets with buffaloes are an example of<br><br>a) colony<br>b) commensalism<br>c) protocooperation<br>d) allelopathy",
+        "a": "commensalism",
+        "t": "week03"
+    },
+    {
+        "q": "If we all became vegetarians, we'll be able to support our large populations. This can be explained through<br><br>a) 10% rule<br>b) 1% rule<br>c) trophic cascade<br>d) biodiversity",
+        "a": "10% rule",
+        "t": "week04"
+    },
+    {
+        "q": "Net primary productivity is given by<br><br>a) APAR \u00d7 LUE<br>b) APAR + LUE<br>c) APAR - LUE<br>d) APAR / LUE",
+        "a": "APAR \u00d7 LUE",
+        "t": "week04"
+    },
+    {
+        "q": "Trees \u2192 Birds \u2192 Parasites \u2192 Hyperparasites represents<br><br>a) upright pyramid of numbers<br>b) inverted pyramid of numbers<br>c) spindle pyramid of numbers<br>d) dumb-bell pyramid of numbers",
+        "a": "inverted pyramid of numbers",
+        "t": "week04"
+    },
+    {
+        "q": "Consider the food chain: Grass \u2192 Grasshopper \u2192 Frog \u2192 Snake \u2192 Hawk. As we move up the food chain,<br><br>a) available energy decreases<br>b) available energy increases<br>c) available energy remains same<br>d) available energy is zero everywhere",
+        "a": "available energy decreases",
+        "t": "week04"
+    },
+    {
+        "q": "Consider the food chain: Grass \u2192 Grasshopper \u2192 Frog \u2192 Snake \u2192 Hawk. In this food chain,<br><br>a) frog is producer<br>b) frog is consumer and carnivore<br>c) frog is consumer and herbivore<br>d) frog is decomposer",
+        "a": "frog is consumer and carnivore",
+        "t": "week04"
+    },
+    {
+        "q": "Consider the food chain: Grass \u2192 Grasshopper \u2192 Frog \u2192 Snake \u2192 Hawk. In this food chain,<br><br>a) more number of hawks than grasshoppers can be supported<br>b) more number of grasshoppers than hawks can be supported<br>c) equal number of hawks and grasshoppers can be supported<br>d) none of these",
+        "a": "more number of grasshoppers than hawks can be supported",
+        "t": "week04"
+    },
+    {
+        "q": "At the compensation point,<br><br>a) photosynthesis = respiration<br>b) photosynthesis < respiration<br>c) photosynthesis > respiration<br>d) photosynthesis = 0",
+        "a": "photosynthesis = respiration",
+        "t": "week04"
+    },
+    {
+        "q": "Glacial lakes are typical examples of<br><br>a) eutrophic lakes<br>b) hypereutrophic lakes<br>c) oligotrophic lakes<br>d) mesotrophic lakes",
+        "a": "oligotrophic lakes",
+        "t": "week04"
+    },
+    {
+        "q": "Consider the food chain: Grass \u2192 Grasshopper \u2192 Frog \u2192 Snake \u2192 Hawk. In this food chain,<br><br>a) hawk is producer<br>b) hawk is consumer and carnivore<br>c) hawk is consumer and herbivore<br>d) hawk is decomposer",
+        "a": "hawk is consumer and carnivore",
+        "t": "week04"
+    },
+    {
+        "q": "Tree \u2192 Frugivorous birds \u2192 Hawk represents<br><br>a) upright pyramid of numbers<br>b) inverted pyramid of numbers<br>c) spindle pyramid of numbers<br>d) dumb-bell pyramid of numbers",
+        "a": "spindle pyramid of numbers",
+        "t": "week04"
+    },
+    {
+        "q": "Which of these is true?<br><br>a) Physiological longevity > Ecological longevity<br>b) Physiological longevity = Ecological longevity<br>c) Physiological longevity < Ecological longevity<br>d) a or b",
+        "a": "a or b",
+        "t": "week05"
+    },
+    {
+        "q": "A sampling procedure such that each possible combination of sampling units out of the population has the same chance of being selected is referred to as<br><br>a) Simple random sampling<br>b) Systematic sampling<br>c) Stratified sampling<br>d) Multistage sampling",
+        "a": "Simple random sampling",
+        "t": "week05"
+    },
+    {
+        "q": "Cover board surveys are typically used for sampling<br><br>a) herpetofauna<br>b) fishes<br>c) large mammals<br>d) carnivores",
+        "a": "herpetofauna",
+        "t": "week05"
+    },
+    {
+        "q": "_________ is how close the measured values are to the correct value.<br><br>a) Accuracy<br>b) Precision<br>c) Bias<br>d) Variance",
+        "a": "Accuracy",
+        "t": "week05"
+    },
+    {
+        "q": "The logistic growth equation, when plotted, appears<br><br>a) I shaped<br>b) J shaped<br>c) S shaped<br>d) O shaped",
+        "a": "S shaped",
+        "t": "week05"
+    },
+    {
+        "q": "The minimum replacement level fertility for a population to grow should be greater than<br><br>a) 1<br>b) 2<br>c) 3<br>d) 4",
+        "a": "2",
+        "t": "week05"
+    },
+    {
+        "q": "The juvenile mortality rate is the annual number of deaths of juveniles per<br><br>a) 100 births<br>b) 1000 births<br>c) 100 live births<br>d) 1000 live births",
+        "a": "1000 live births",
+        "t": "week05"
+    },
+    {
+        "q": "_______ employs a simple rule of selecting every kth unit starting with a number chosen at random from 1 to k as the random start.<br><br>a) Simple random sampling<br>b) Systematic sampling<br>c) Stratified sampling<br>d) Multistage sampling",
+        "a": "Systematic sampling",
+        "t": "week05"
+    },
+    {
+        "q": "Pan traps are used for sampling<br><br>a) bees<br>b) butterflies<br>c) non-pollinator insects<br>d) pollinator insects",
+        "a": "pollinator insects",
+        "t": "week05"
+    },
+    {
+        "q": "Which of these is not a measure of absolute population density?<br><br>a) total count<br>b) pelt count<br>c) capture-recapture method<br>d) removal method",
+        "a": "pelt count",
+        "t": "week05"
+    },
+    {
+        "q": "Which of these is correct? a. b. c. d.<br><br>a) Fundamental niche > Realised niche<br>b) Fundamental niche = Realised niche<br>c) Fundamental niche < Realised niche<br>d) a or b",
+        "a": "a or b",
+        "t": "week06"
+    },
+    {
+        "q": "Which of these is not a characteristic of pioneer species<br><br>a) ability to grow on bare rocks<br>b) ability to tolerate extreme temperatures<br>c) large size<br>d) short life span",
+        "a": "large size",
+        "t": "week06"
+    },
+    {
+        "q": "A climax caused by wildfires is an example of<br><br>a) climatic climax<br>b) edaphic climax<br>c) disclimax<br>d) catastrophic climax",
+        "a": "catastrophic climax",
+        "t": "week06"
+    },
+    {
+        "q": "Importance value varies from<br><br>a) 0 to 10<br>b) 0 to 50<br>c) 0 to 100<br>d) 0 to 300",
+        "a": "0 to 300",
+        "t": "week06"
+    },
+    {
+        "q": "When compared to generalist species, specialist species have<br><br>a) narrower niches<br>b) broader niches<br>c) same-size niches<br>d) none of these",
+        "a": "narrower niches",
+        "t": "week06"
+    },
+    {
+        "q": "The climax near Tindni village is being controlled by disturbance by cattle. This is an example of a. b. c. d.<br><br>a) climatic climax<br>b) edaphic climax<br>c) disclimax<br>d) catastrophic climax",
+        "a": "disclimax",
+        "t": "week06"
+    },
+    {
+        "q": "Lithosere is an example of<br><br>a) hydrosere<br>b) xerosere<br>c) psammosere<br>d) halosere",
+        "a": "xerosere",
+        "t": "week06"
+    },
+    {
+        "q": "A species found most frequently in a particular community, but also present occasionally in others is called<br><br>a) accidental species<br>b) indifferent species<br>c) selective species<br>d) exclusive species",
+        "a": "selective species",
+        "t": "week06"
+    },
+    {
+        "q": "Which of these depicts correctly the lithosere primary succession?<br><br>a) Rock \u2192 Crustose lichen \u2192 Foliose lichen \u2192 Moss \u2192 Herbaceous stage \u2192 Shrub \u2192 Woodland \u2192 Climax<br>b) Rock \u2192 Foliose lichen \u2192 Crustose lichen \u2192 Moss \u2192 Herbaceous stage \u2192 Shrub \u2192 Woodland \u2192 Climax<br>c) Moss \u2192 Crustose lichen \u2192 Foliose lichen \u2192 Rock \u2192 Herbaceous stage \u2192 Shrub \u2192 Woodland \u2192 Climax<br>d) Rock \u2192 Crustose lichen \u2192 Foliose lichen \u2192 shrub \u2192 Herbaceous stage \u2192 Moss \u2192 woodland \u2192 climax",
+        "a": "Rock \u2192 Crustose lichen \u2192 Foliose lichen \u2192 Moss \u2192 Herbaceous stage \u2192 Shrub \u2192 Woodland \u2192 Climax",
+        "t": "week06"
+    },
+    {
+        "q": "Importance value can be written as<br><br>a) Relative density + Relative frequency X Relative dominance<br>b) Relative density X Relative frequency + Relative dominance<br>c) Relative density + Relative frequency + Relative dominance<br>d) Relative density X Relative frequency X Relative dominance",
+        "a": "Relative density + Relative frequency + Relative dominance",
+        "t": "week06"
+    },
+    {
+        "q": "Which of these is not a physical factor of habitat?<br><br>a) soil<br>b) moisture<br>c) predators<br>d) temperature",
+        "a": "predators",
+        "t": "week07"
+    },
+    {
+        "q": "The movement of individuals away from their place of birth or hatching or seed production into a new habitat or area to survive and reproduce is called<br><br>a) translocation<br>b) migration<br>c) dispersal<br>d) drifting",
+        "a": "dispersal",
+        "t": "week07"
+    },
+    {
+        "q": "The movement of lions across the Gir landscape is an example of<br><br>a) diffusion<br>b) secular dispersal<br>c) jump dispersal<br>d) drifting",
+        "a": "diffusion",
+        "t": "week07"
+    },
+    {
+        "q": "I tried growing vegetables under my teak plantation, but the vegetable plants died out. I should be concerned about<br><br>a) autophagy<br>b) allelophagy<br>c) autopathy<br>d) allelopathy",
+        "a": "allelopathy",
+        "t": "week07"
+    },
+    {
+        "q": "The regular, seasonal movement of animals, often along fixed routes is called<br><br>a) translocation<br>b) migration<br>c) dispersal<br>d) drifting",
+        "a": "migration",
+        "t": "week07"
+    },
+    {
+        "q": "\"The rate of any biological process is limited by that factor in least amount relative to requirement, so there is a single limiting factor.\" This is the statement for<br><br>a) Liebig\u2019s law of the minimum<br>b) Liebig\u2019s law of the maximum<br>c) Shelford\u2019s law of tolerance<br>d) Shelford\u2019s law of intolerance",
+        "a": "Liebig\u2019s law of the minimum",
+        "t": "week07"
+    },
+    {
+        "q": "\"Quick movement over large distances, often across unsuitable terrain\" is a description of<br><br>a) diffusion<br>b) secular dispersal<br>c) jump dispersal<br>d) drifting",
+        "a": "jump dispersal",
+        "t": "week07"
+    },
+    {
+        "q": "\"The geographical distribution of a species will be controlled by that environmental factor for which the organism has the narrowest range of tolerance.\" This is the statement for<br><br>a) Liebig\u2019s law of the minimum<br>b) Liebig\u2019s law of the maximum<br>c) Shelford\u2019s law of tolerance<br>d) Shelford\u2019s law of intolerance",
+        "a": "Shelford\u2019s law of tolerance",
+        "t": "week07"
+    },
+    {
+        "q": "Good climate is a<br><br>a) chemical factor<br>b) demographic factor<br>c) push factor<br>d) pull factor",
+        "a": "pull factor",
+        "t": "week07"
+    },
+    {
+        "q": "Scarcity of food is a<br><br>a) chemical factor<br>b) demographic factor<br>c) push factor<br>d) pull factor",
+        "a": "push factor",
+        "t": "week07"
+    },
+    {
+        "q": "Zoo is an example of<br><br>a) in-situ conservation<br>b) ex-situ conservation<br>c) in-situ preservation<br>d) ex-situ preservation",
+        "a": "ex-situ conservation",
+        "t": "week08"
+    },
+    {
+        "q": "The \u201csubset of physical and biotic environmental factors that permit an animal (or plant) to survive and reproduce\u201d is the definition of<br><br>a) habitat<br>b) ecosystem<br>c) biome<br>d) biosphere",
+        "a": "habitat",
+        "t": "week08"
+    },
+    {
+        "q": "Which of these correctly represents the process of habitat fragmentation and loss?<br><br>a) Original forest \u2192 Dissection \u2192 Perforation \u2192 Fragmentation \u2192 Attrition<br>b) Original forest \u2192 Dissection \u2192 Attrition \u2192 Fragmentation \u2192 Perforation<br>c) Original forest \u2192 Dissection \u2192 Perforation \u2192 Attrition \u2192 Fragmentation<br>d) Original forest \u2192 Dissection \u2192 Fragmentation \u2192 Perforation \u2192 Attrition",
+        "a": "Original forest \u2192 Dissection \u2192 Perforation \u2192 Fragmentation \u2192 Attrition",
+        "t": "week08"
+    },
+    {
+        "q": "The acronym HIPPO does not include<br><br>a) habitat loss<br>b) invasive species<br>c) pollination<br>d) pollution",
+        "a": "pollination",
+        "t": "week08"
+    },
+    {
+        "q": "We prefer those areas for the creation of a conservation reserve where the level of threat is<br><br>a) very high<br>b) medium<br>c) very low<br>d) non-existent",
+        "a": "medium",
+        "t": "week08"
+    },
+    {
+        "q": "The acronym HIPPO does not include<br><br>a) habitat loss<br>b) habitat enhancement<br>c) invasive species<br>d) human over-population",
+        "a": "habitat enhancement",
+        "t": "week08"
+    },
+    {
+        "q": "According to Leopold, which of these is not a tool of habitat management?<br><br>a) fire<br>b) gun<br>c) cattle<br>d) sickle",
+        "a": "sickle",
+        "t": "week08"
+    },
+    {
+        "q": "Captive breeding is an example of<br><br>a) in-situ conservation<br>b) ex-situ conservation<br>c) in-situ preservation<br>d) ex-situ preservation",
+        "a": "ex-situ conservation",
+        "t": "week08"
+    },
+    {
+        "q": "Which of these is a stochastic factor?<br><br>a) birth rate<br>b) death rate<br>c) population structure<br>d) environmental fluctuation",
+        "a": "environmental fluctuation",
+        "t": "week08"
+    },
+    {
+        "q": "Which of these is a deterministic factor?<br><br>a) environmental variation<br>b) forest fire<br>c) death rate<br>d) diseases",
+        "a": "death rate",
+        "t": "week08"
+    },
+    {
+        "q": "Which of these is a positive check according to Malthus?<br><br>a) late marriage<br>b) war<br>c) celibacy<br>d) moral restraint",
+        "a": "war",
+        "t": "week09"
+    },
+    {
+        "q": "________ determines which projects or developments require a full or partial impact assessment study.<br><br>a) screening<br>b) scoping<br>c) reporting<br>d) review",
+        "a": "screening",
+        "t": "week09"
+    },
+    {
+        "q": "Which of these is a pillar of sustainability<br><br>a) social sustainability<br>b) industrial sustainability<br>c) agricultural sustainability<br>d) trans-boundary sustainability",
+        "a": "social sustainability",
+        "t": "week09"
+    },
+    {
+        "q": "Which of these is not a pillar of sustainability?<br><br>a) environmental sustainability<br>b) economic sustainability<br>c) trans-boundary sustainability<br>d) social sustainability",
+        "a": "trans-boundary sustainability",
+        "t": "week09"
+    },
+    {
+        "q": "The book \"An Essay on the Principle of Population\" was written by<br><br>a) Darwin<br>b) Malthus<br>c) Spencer<br>d) Owens",
+        "a": "Malthus",
+        "t": "week09"
+    },
+    {
+        "q": "According to Malthusian model,<br><br>a) Population grows in geometric progression, food supply increases in arithmetic progression<br>b) Population grows in geometric progression, food supply increases in geometric progression<br>c) Population grows in arithmetic progression, food supply increases in arithmetic progression<br>d) Population grows in arithmetic progression, food supply increases in geometric progression",
+        "a": "Population grows in geometric progression, food supply increases in arithmetic progression",
+        "t": "week09"
+    },
+    {
+        "q": "The quantum of human impacts is given by<br><br>a) I = P \u00d7 A \u00d7 T<br>b) I = P + A + T<br>c) I = P + A - T<br>d) I = P - (A + T)",
+        "a": "I = P \u00d7 A \u00d7 T",
+        "t": "week09"
+    },
+    {
+        "q": "____________is used to identify which potential impacts are relevant to assess.<br><br>a) screening<br>b) scoping<br>c) reporting<br>d) review",
+        "a": "scoping",
+        "t": "week09"
+    },
+    {
+        "q": "The demographic transition sees a society move from<br><br>a) high birth rate, low death rate to low birth rate, low death rate<br>b) low birth rate, high death rate to low birth rate, low death rate<br>c) high birth rate, high death rate to low birth rate, low death rate<br>d) high birth rate, high death rate to low birth rate, high death rate",
+        "a": "high birth rate, high death rate to low birth rate, low death rate",
+        "t": "week09"
+    },
+    {
+        "q": "Which of these is a preventive check according to Malthus?<br><br>a) foresight<br>b) vice<br>c) misery<br>d) flood",
+        "a": "foresight",
+        "t": "week09"
+    },
+    {
+        "q": "Which of these is not a climatic forcing for Earth?<br><br>a) changes in plate tectonics<br>b) changes in Earth's orbit<br>c) changes in Sun's orbit<br>d) changes in Sun's strength",
+        "a": "changes in Sun's orbit",
+        "t": "week10"
+    },
+    {
+        "q": "\u201cThe ability of a system to adjust to climate change (including climate variability and extremes) to moderate potential damages, to take advantage of opportunities, or to cope with the consequences\u201d is a definition for<br><br>a) adaptive response<br>b) adaptive capacity<br>c) mitigative response<br>d) mitigative capacity",
+        "a": "adaptive capacity",
+        "t": "week10"
+    },
+    {
+        "q": "Which of these is not a principle of ecological restoration?<br><br>a) ecological integrity<br>b) short-term sustainability<br>c) benefits and engages society<br>d) informed by past and future",
+        "a": "short-term sustainability",
+        "t": "week10"
+    },
+    {
+        "q": "Mesodebris in the context of plastic debris has fragments of size<br><br>a) > 20 mm<br>b) 5 - 20 mm<br>c) < 5 mm<br>d) < 1 mm",
+        "a": "5 - 20 mm",
+        "t": "week10"
+    },
+    {
+        "q": "\u201cAny changes in natural or human systems that inadvertently increase vulnerability to climatic stimuli; an adaptation that does not succeed in reducing vulnerability but increases it instead\u201d is a definition for<br><br>a) adaptation<br>b) mitigation<br>c) maladaptation<br>d) malmitigation",
+        "a": "maladaptation",
+        "t": "week10"
+    },
+    {
+        "q": "Which of these is not a principle of ecological restoration?<br><br>a) ecological integrity<br>b) long-term sustainability<br>c) benefits and engages scientists<br>d) informed by past and future",
+        "a": "benefits and engages scientists",
+        "t": "week10"
+    },
+    {
+        "q": "Which of these is not a climatic forcing for Earth?<br><br>a) changes in plate tectonics<br>b) changes in Earth's orbit<br>c) changes in Moon's orbit<br>d) changes in Sun's strength",
+        "a": "changes in Moon's orbit",
+        "t": "week10"
+    },
+    {
+        "q": "Because of climate change, Mudumalai Tiger Reserve is suffering from frequent droughts. The management has built several artificial water holes for animals, and fills them up regularly with tankers. In the context of climate change, such an action would be called<br><br>a) adaptation<br>b) mitigation<br>c) deceleration<br>d) maladaptation",
+        "a": "adaptation",
+        "t": "week10"
+    },
+    {
+        "q": "Macrodebris in the context of plastic debris has fragments of size<br><br>a) > 20 mm<br>b) 5 - 20 mm<br>c) < 5 mm<br>d) < 1 mm",
+        "a": "> 20 mm",
+        "t": "week10"
+    },
+    {
+        "q": "The government came up with a regulation that incandescent bulbs be replaced by LED bulbs, so that electricity consumption and release of carbon dioxide from power plants is reduced. In the context of climate change, such an action would be called<br><br>a) adaptation<br>b) mitigation<br>c) deceleration<br>d) maladaptation",
+        "a": "mitigation",
+        "t": "week10"
+    },
+    {
+        "q": "Ludwig's ratchet predicts<br><br>a) decreasing harvesting rate<br>b) constant harvesting rate<br>c) increasing harvesting rate<br>d) fluctuating harvesting rate",
+        "a": "increasing harvesting rate",
+        "t": "week11"
+    },
+    {
+        "q": "A pest population is called controlled when<br><br>a) it is not increasing<br>b) it is decreasing<br>c) it is not causing any economic damage<br>d) it is not causing excessive economic damage",
+        "a": "it is not causing excessive economic damage",
+        "t": "week11"
+    },
+    {
+        "q": "Which of these is not an impact of toxic chemicals?<br><br>a) lethal effects<br>b) sub-lethal effects<br>c) reduction of existing stressors<br>d) reduced fecundity",
+        "a": "reduction of existing stressors",
+        "t": "week11"
+    },
+    {
+        "q": "Which of these is correct?<br><br>a) The maximum sustainable yield is near the beginning of the sigmoidal curve.<br>b) The maximum sustainable yield is near the mid-point of the sigmoidal curve.<br>c) The maximum sustainable yield is near the end of the sigmoidal curve.<br>d) None of these",
+        "a": "The maximum sustainable yield is near the mid-point of the sigmoidal curve.",
+        "t": "week11"
+    },
+    {
+        "q": "A root zone treatment plant is an example of<br><br>a) phytoremediation<br>b) biological control<br>c) biomagnification<br>d) bioaccumulation",
+        "a": "phytoremediation",
+        "t": "week11"
+    },
+    {
+        "q": "A pest population is called uncontrolled when<br><br>a) it is increasing<br>b) it is not decreasing<br>c) it is causing some economic damage<br>d) it is causing excessive economic damage",
+        "a": "it is causing excessive economic damage",
+        "t": "week11"
+    },
+    {
+        "q": "The impact of El Nino on fishery collapse in Peru is explained by<br><br>a) match hypothesis<br>b) mismatch hypothesis<br>c) match-mismatch hypothesis<br>d) none of these",
+        "a": "match-mismatch hypothesis",
+        "t": "week11"
+    },
+    {
+        "q": "A deciduous forest in Madhya Pradesh was converted to a mine. After the mining operations were over, the pits were filled up with soil and species of deciduous forest planted again. This is an example of recovery restoration enhancement",
+        "a": "restoration",
+        "t": "week11"
+    },
+    {
+        "q": "A deciduous forest in Madhya Pradesh was converted to a mine. After the mining operations were over, the pits were filled up with water and a lake was created. It is now visited by several migratory birds. This is an example of<br><br>a) recovery<br>b) restoration<br>c) enhancement<br>d) replacement",
+        "a": "replacement",
+        "t": "week11"
+    },
+    {
+        "q": "Which of these is correct?<br><br>a) R + G = M + F<br>b) R + M = G + F<br>c) R + F = M + G<br>d) R + G + M + F = 0",
+        "a": "R + G = M + F",
+        "t": "week11"
+    }
+];
+        
+        let groupedByTag = {};
+        
+        // --- State ---
+        let isCramming = false;
+        let cramDeck = [];
+        let learningQueue = [];
+        let currentDeck = [];
+        let currentDeckIndex = 0;
+
+        // --- DOM Elements ---
+        const sidebarContent = document.getElementById('sidebar-content');
+        const questionArea = document.getElementById('question-area');
+        const answerArea = document.getElementById('answer-area');
+        const tagDisplay = document.getElementById('tag-display');
+        const progressDisplay = document.getElementById('progress-display');
+        const cardContainer = document.getElementById('card-container');
+        
+        const normalControls = document.getElementById('normal-controls');
+        const showAnswerBtn = document.getElementById('show-answer-btn');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+
+        const cramControls = document.getElementById('cram-controls');
+        const cramShowAnswerBtn = document.getElementById('cram-show-answer-btn');
+        const cramFeedback = document.getElementById('cram-feedback');
+        const cramProgressBar = document.getElementById('cram-progress-bar');
+        
+        const cramModal = document.getElementById('cram-modal');
+        const startCramBtn = document.getElementById('start-cram-btn');
+        const cancelCramBtn = document.getElementById('cancel-cram-btn');
+        const beginCramBtn = document.getElementById('begin-cram-btn');
+        const cramWeekSelection = document.getElementById('cram-week-selection');
+        const cramSelectAllBtn = document.getElementById('cram-select-all');
+
+        // --- Initialization ---
+        function initialize() {
+            groupCardsByTag();
+            renderSidebar();
+            renderCramModalOptions();
+            startDeckView('All'); // Start with the "All" deck view
+            setupEventListeners();
+        }
+
+        function groupCardsByTag() {
+            flashcardData.forEach((card, index) => {
+                if (!groupedByTag[card.t]) groupedByTag[card.t] = [];
+                groupedByTag[card.t].push({ ...card, originalIndex: index });
+            });
+        }
+
+        function renderSidebar() {
+            sidebarContent.innerHTML = '';
+            const tags = ['All', ...Object.keys(groupedByTag).sort()];
+            tags.forEach(tag => {
+                const button = document.createElement('button');
+                button.className = 'text-left text-lg p-2 rounded-md text-gray-400 hover:bg-gray-700 hover:text-white w-full transition-colors';
+                button.textContent = tag.replace(/_/g, ' ');
+                button.dataset.tag = tag;
+                button.addEventListener('click', () => {
+                    exitCramMode();
+                    startDeckView(tag);
+                });
+                sidebarContent.appendChild(button);
+            });
+        }
+        
+        function renderCramModalOptions() {
+             cramWeekSelection.innerHTML = '';
+             Object.keys(groupedByTag).sort().forEach(tag => {
+                const button = document.createElement('button');
+                button.dataset.tag = tag;
+                button.className = 'week-selector-btn p-3 rounded-lg bg-gray-700 text-white font-semibold transition-colors data-[selected=true]:bg-indigo-600';
+                button.textContent = tag.replace('week', '');
+                button.dataset.selected = 'false';
+                button.addEventListener('click', () => {
+                    const isSelected = button.dataset.selected === 'true';
+                    button.dataset.selected = isSelected ? 'false' : 'true';
+                });
+                cramWeekSelection.appendChild(button);
+             });
+        }
+
+        function setupEventListeners() {
+            showAnswerBtn.addEventListener('click', showAnswer);
+            prevBtn.addEventListener('click', showPrevDeckCard);
+            nextBtn.addEventListener('click', showNextDeckCard);
+
+            startCramBtn.addEventListener('click', () => cramModal.classList.remove('hidden'));
+            cancelCramBtn.addEventListener('click', () => cramModal.classList.add('hidden'));
+            cramSelectAllBtn.addEventListener('click', () => {
+                const buttons = cramWeekSelection.querySelectorAll('.week-selector-btn');
+                const shouldSelectAll = Array.from(buttons).some(b => b.dataset.selected === 'false');
+                buttons.forEach(b => b.dataset.selected = shouldSelectAll);
+            });
+            beginCramBtn.addEventListener('click', startCramSession);
+            
+            cramShowAnswerBtn.addEventListener('click', showAnswer);
+            document.querySelectorAll('.cram-feedback-btn').forEach(btn => {
+                btn.addEventListener('click', () => handleCramFeedback(btn.dataset.difficulty));
+            });
+        }
+
+        function startDeckView(tag) {
+            currentDeck = (tag === 'All') ? flashcardData : groupedByTag[tag];
+            currentDeckIndex = 0;
+            
+            cardContainer.classList.remove('hidden');
+            cardContainer.classList.add('flex');
+            normalControls.classList.remove('hidden');
+            normalControls.classList.add('flex');
+
+            showDeckCard(currentDeckIndex);
+        }
+        
+        function showDeckCard(index) {
+            if (index < 0 || index >= currentDeck.length) return;
+            
+            const cardData = currentDeck[index];
+            questionArea.innerHTML = cardData.q;
+            answerArea.innerHTML = cardData.a;
+            answerArea.classList.add('hidden');
+            tagDisplay.textContent = cardData.t;
+            progressDisplay.textContent = `${index + 1} / ${currentDeck.length}`;
+        }
+        
+        function showPrevDeckCard() {
+            if (currentDeckIndex > 0) {
+                currentDeckIndex--;
+                showDeckCard(currentDeckIndex);
+            }
+        }
+
+        function showNextDeckCard() {
+            if (currentDeckIndex < currentDeck.length - 1) {
+                currentDeckIndex++;
+                showDeckCard(currentDeckIndex);
+            }
+        }
+
+        function showAnswer() {
+            answerArea.classList.remove('hidden');
+            if (isCramming) {
+                cramShowAnswerBtn.classList.add('hidden');
+                cramFeedback.classList.remove('hidden');
+            }
+        }
+        
+        // --- Cram Mode Logic ---
+        function startCramSession() {
+            const selectedTags = Array.from(cramWeekSelection.querySelectorAll('.week-selector-btn[data-selected="true"]'))
+                                      .map(btn => btn.dataset.tag);
+            
+            if (selectedTags.length === 0) return;
+
+            isCramming = true;
+            let deck = flashcardData.filter(card => selectedTags.includes(card.t));
+            deck.sort(() => Math.random() - 0.5);
+            
+            cramDeck = deck.map((card, index) => ({ ...card, cramId: index, status: 'unseen' }));
+            learningQueue = [...cramDeck];
+            
+            cramModal.classList.add('hidden');
+            normalControls.classList.add('hidden');
+            cardContainer.classList.remove('hidden');
+            cardContainer.classList.add('flex');
+            cramControls.classList.remove('hidden');
+            cramControls.classList.add('flex');
+            cramProgressBar.classList.remove('hidden');
+
+            renderCramProgressBar();
+            showNextCramCard();
+        }
+
+        function renderCramProgressBar() {
+            cramProgressBar.innerHTML = '';
+            cramDeck.forEach(card => {
+                const segment = document.createElement('div');
+                segment.className = 'progress-segment flex-1 h-full bg-gray-600';
+                cramProgressBar.appendChild(segment);
+                card.progressSegment = segment;
+            });
+        }
+
+        function showNextCramCard() {
+            if (learningQueue.length === 0) {
+                alert("Congratulations! Cram session complete.");
+                exitCramMode();
+                return;
+            }
+            const cardData = learningQueue[0];
+            questionArea.innerHTML = cardData.q;
+            answerArea.innerHTML = cardData.a;
+            answerArea.classList.add('hidden');
+            tagDisplay.textContent = cardData.t;
+            progressDisplay.textContent = `Remaining: ${learningQueue.length}`;
+            
+            cramShowAnswerBtn.classList.remove('hidden');
+            cramFeedback.classList.add('hidden');
+        }
+        
+        function handleCramFeedback(difficulty) {
+            const currentCard = learningQueue.shift(); // Take card from the front
+            let reinsertIndex;
+
+            switch(difficulty) {
+                case 'hard':
+                    reinsertIndex = Math.ceil(learningQueue.length * 0.25);
+                    learningQueue.splice(reinsertIndex, 0, currentCard);
+                    currentCard.status = 'hard';
+                    break;
+                case 'mid':
+                    reinsertIndex = Math.ceil(learningQueue.length * 0.50);
+                    learningQueue.splice(reinsertIndex, 0, currentCard);
+                    currentCard.status = 'mid';
+                    break;
+                case 'easy':
+                    currentCard.status = 'easy';
+                    // Card is not re-inserted, effectively removing it
+                    break;
+            }
+            updateProgressBar(currentCard);
+            showNextCramCard();
+        }
+
+        function updateProgressBar(card) {
+            const colorMap = {
+                hard: 'bg-red-500',
+                mid: 'bg-yellow-500',
+                easy: 'bg-green-500'
+            };
+            card.progressSegment.className = 'progress-segment flex-1 h-full ' + colorMap[card.status];
+        }
+        
+        function exitCramMode() {
+            if (!isCramming) return;
+            isCramming = false;
+            cramControls.classList.add('hidden');
+            cramProgressBar.classList.add('hidden');
+            progressDisplay.textContent = ''; // Clear cram progress text
+            startDeckView('All'); // Go back to the default "All" deck view
+        }
+
+        initialize();
+    </script>
+</body>
+</html>
